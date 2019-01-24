@@ -2,7 +2,7 @@
 LOVE2D (V11+) Library that I pretty much created for my own use. Feel free to take and adapt as needed for your own projects. (MIT Lisence)
 It's mostly bruteforce code, since I just do gamejams, so I'm sorry if it's not the best.
 
-Thank you,
+Thank you,<br>
 System Logoff.
 
 ## SLog Audio
