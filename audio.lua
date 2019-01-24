@@ -2,7 +2,7 @@ local audio = {
   _NAME        = 'SLog Audio',
   _VERSION     = '0.1',
   _DESCRIPTION = 'Lazy Audio Controller',
-  _URL         = 'https://github.com/SystemLogoff',
+  _URL         = 'https://github.com/SystemLogoff/SLog-Library',
   _LICENSE     = [[
     MIT LICENSE
 

@@ -2,7 +2,7 @@ local palette = {
   _NAME        = 'SLog Palette',
   _VERSION     = '0.1',
   _DESCRIPTION = 'Lazy Palette From Image / Assume 32px Blocks.',
-  _URL         = 'https://github.com/SystemLogoff/',
+  _URL         = 'https://github.com/SystemLogoff/SLog-Library',
   _LICENSE     = [[
     MIT LICENSE
 

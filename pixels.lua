@@ -2,7 +2,7 @@ local pixels = {
   _NAME        = 'SLog Pixels',
   _VERSION     = '1.4',
   _DESCRIPTION = 'A Pixel Perfect Screen Scaler for Love2D',
-  _URL         = 'https://github.com/SystemLogoff/lovePixel',
+  _URL         = 'https://github.com/SystemLogoff/SLog-Library',
   _LICENSE     = [[
     MIT LICENSE
 
@@ -29,7 +29,7 @@ local pixels = {
   ]]
 }
 
--- note to self: camera:attach(x,y,w,h, noclip)
+-- note if using hump camera: camera:attach(x,y,w,h, noclip)
 -- note camera:attach(x,y,love.graphics.getWidth() / pixels.scale,love.graphics.getHeight() / lovePixels.scale, noclip)
 
 local baseWidth = love.graphics.getWidth() -- Capture the conf.lua settings for Window Size

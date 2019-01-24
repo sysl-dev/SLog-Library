@@ -2,7 +2,7 @@ local floppy = {
   _NAME        = 'SLog Floppy',
   _VERSION     = '0.1',
   _DESCRIPTION = 'A Save/Load Library for Love2D, requires smallfolk.',
-  _URL         = 'https://github.com/SystemLogoff/',
+  _URL         = 'https://github.com/SystemLogoff/SLog-Library',
   _REQUIRES    = 'https://github.com/gvx/Smallfolk',
   _LICENSE     = [[
     MIT LICENSE
