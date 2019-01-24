@@ -1,1 +1,0 @@
-# SLog Library
