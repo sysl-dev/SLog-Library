@@ -48,7 +48,7 @@ function floppy:save(filename, memory)
   print("Save?", didwork, "Notes:", savemessage)
 end
 
-function floppy:delete(filename, memory)
+function floppy:delete(filename)
   local didwork, savemessage
   if type(filename) ~= type("STRING") then
     print("Floppy only supports strings for save files.") return
