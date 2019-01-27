@@ -1,51 +1,55 @@
 # SLog-Library
-LOVE2D (V11+) Library that I pretty much created for my own use. Feel free to take and adapt as needed for your own projects. (MIT Lisence)
-It's mostly bruteforce code, since I just do gamejams, so I'm sorry if it's not the best.
+LOVE2D (V11+) Library that I pretty much created for my own use. Feel free to take and adapt as needed for your own projects. (MIT License) It's mostly brute-force code, since I just do game jams. Let me know if you find it useful!
 
 Thank you,<br>
-System Logoff.
+System Logoff
 
 ## SLog Audio
-SLog Audio is a wrapper around LOVE2D's audio functions, with automatic import functionality. 
+SLog Audio is a wrapper around LOVE2D's audio functions, with automatic import functionality.
 
 ### Including in your project
 ```Audio = require 'path.to.audio'``` -- Creates Audio.sfx, Audio.vfx, Audio.mus<br>
 ```Audio:setUp()``` -- Imports music from folders, sets music to loop.
 
 ### Requirements
-```music```, ```sfx``` and ```vfx``` directories, containing music, sound effects, and voice-over effects respectively. 
+```music```, ```sfx``` and ```vfx``` directories, containing music, sound effects, and voice-over effects respectively.
 
 ### Note
 Currently Love2D 11.2 has an issue with streaming music, this will be corrected in 11.3
 
 ### Configuration / Control
-```Audio.currentmusic = nil``` -- What music is currently playing
-```Audio.debug = true``` -- Print the list of audio files to the console.
+```Audio.currentmusic[#]``` -- What music is currently playing
+```Audio.debug = true``` -- Print the list of audio files to the console on game load.
 
-### Functions
-#### Audio:setMusic(musicName)
-Sets the music to the file name of your song, without the extension. This will also set Audio.currentmusic to the name of that song.<br>
-Example: ```Audio:setMusic("Cool_Music")```<br>
-If you do not set a song or the song does not exist, an error will print to the console, and the function will return nothing. 
+### Functions - Music
+#### Audio:setMusicPlay(musicName, musicLayer)
+Sets the music to an imported song. The name is the music filename without the extension. If you do not define a layer, it will default to 1. It will then auto-play the track and stop other songs playing.
 
-#### Audio:crossMusic(musicName)
-Pause the current music and switch to another song at the same time as the previous song.
+#### Audio:setMusic(musicName, musicLayer)
+Set the music of a layer, does not auto-play the track.
 
-#### Audio:pauseMusic(musicName)
-Pause the music track.
+#### Audio:playMusic(musicLayer)
+Play the track on that music layer. If no value is passed it will default to 1.
 
-#### Audio:resumeMusic(musicName)
-Resume the music track.
+#### Audio:pauseMusic(musicLayer)
+Pause the track on that music layer. If no value is passed it will default to 1.
 
-#### Audio:restartMusic(musicName)
-Restart the music track.
+#### Audio:resumeMusic(musicLayer)
+Resume the track on that music layer. If no value is passed it will default to 1.
+
+#### Audio:restartMusic(musicLayer)
+Restarts the track on that music layer. If no value is passed it will default to 1.
 
 #### Audio:stopMusic(musicName)
-Stop the music track.
+Stop the track on that music layer. If no value is passed it will default to 1.
 
 #### Audio:stopAllMusic()
 Stops all playing music tracks.
 
+#### Audio:crossMusic(layer1, layer2)
+Pause layer1, resume layer2 at layer1's paused time.
+
+### Functions - Sound
 #### Audio:stopAllSFX()
 Stops all playing sound effects.
 
@@ -55,6 +59,7 @@ Play a sound effect.
 #### Audio:sfxForcePlay(SFXName)
 Force a sound effect to play by stopping the sound effect and replaying it.
 
+### Functions - VFX
 #### Audio:stopAllVFX()
 Stops all playing voice lines.
 
@@ -64,6 +69,37 @@ Play a voice line.
 #### Audio:vfxForcePlay(SFXName)
 Force a voice line to play by stopping the sound effect and replaying it.
 
+### Functions - Volume
+#### Audio:setGlobalSFXVolume(value)
+Set the global volume of all sound effects.
+
+#### Audio:setGlobalMusicVolume(value)
+Set the global volume of all songs.
+
+#### Audio:setGlobalVFXVolume(value)
+Set the global volume of all voice effects.
+
+#### Audio:setGlobalVolume(value)
+Set the global volume of all sounds.
+
+#### Audio:setSingleSFX(name, value)
+Set the volume of a single sound.
+
+#### Audio:setSingleMusic(name, value)
+Set the volume of a single song.
+
+#### Audio:setSingleVFX(name, value)
+Set the volume of a single voice.
+
+#### Audio:setBatchSFX({table_names}{table_values})
+Batch set the sound volume of a list of sound effects.
+
+#### Audio:setBatchMusic({table_names}{table_values})
+Batch set the sound volume of a list of songs.
+
+#### Audio:setBatchCFX({table_names}{table_values})
+Batch set the sound volume of a list of voices.
+
 ## SLog Floppy
 SLog Floppy is a wrapper around [Smallfolk](https://github.com/gvx/Smallfolk) for a fast way to manage save files.
 
@@ -72,17 +108,17 @@ SLog Floppy is a wrapper around [Smallfolk](https://github.com/gvx/Smallfolk) fo
 Note: You will have to define Smallfolk's imported name in floppy.lua
 
 ### Configuration / Control
-```floppy.filetype = ".txt"``` -- Defines what save files end with. 
+```floppy.filetype = ".txt"``` -- Defines what save files end with.
 
 ### Functions
 #### Floppy:save(filename, memory)
-Filename is what the file is named, memory is what Lua Table to dump to the file. 
+Filename is what the file is named, memory is what Lua Table to dump to the file.
 
 #### Floppy:delete(filename)
 Delete a save file.
 
 #### memory = Floppy:Load(filename)
-Filename is what the file is named, memory is what Lua Table to dump the file into. 
+Filename is what the file is named, memory is what Lua Table to dump the file into.
 
 ## SLog Palette
 A quick image to palette table command.
@@ -101,7 +137,7 @@ A quick image to palette table command.
 A Pixel Perfect Screen Scaler for Love2D.
 
 ### Including in your project
-```Pixels = require 'path.to.pixels'``` 
+```Pixels = require 'path.to.pixels'```
 ```Pixels:load()``` -- Set the default screen scale, if not assigned it will do the max window size that fits within the current screen.<br><br>
 At the start of love:draw() insert: ```  Pixels:drawGameArea()``` then at the end, after ahh your draw code, put ```Pixels:endDrawGameArea()```
 
@@ -144,7 +180,7 @@ Note: Audio tags require SLog Audio.
 
 ### Using
 In ```love:draw()``` include: ```Textbox:draw(x, y)```<br>
-Send text with: ```Textbox:send("Text Here", "Clear")<br>
+Send text with: ```Textbox:send("Text Here", "Clear")```<br>
 Note: Clear clears the previous text from the box.
 
 ### Tags
@@ -245,11 +281,3 @@ Resume Music
 
 #### {mus_cross}{musicname}
 Switch to another music track at the same point as the last song.
-
-
-
-
-
-
-
-
