@@ -27,13 +27,34 @@ local audio = {
     TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
     SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   ]],
-  _Note = "Assumes: audio = {mus = {}, and sfx = {}, and vsfx = {}} change if required."}
+  _Note = "Assumes: That you use music, sfx, vfx as folders."}
 
-audio.currentmusic = nil
-audio.debug = true
+  --[[----------------------------------------------------------------------------
+        Configuration
+  --]]----------------------------------------------------------------------------
+
+audio.currentmusic = {}
+audio.currentmusic[1] = nil
+
+audio.debug = false
 audio.sfx = {} -- Container for sfx
 audio.mus = {} -- Container for music
 audio.vfx = {} -- Contaciner for Voice Acting
+
+-- Volume of the tracks.
+local globalVolume = 1
+local globalVolumeSFX = 1
+local globalVolumeMUS = 1
+local globalVolumeVFX = 1
+
+-- Table holding the volume of each sound.
+local sfxVolume = {}
+local musVolume = {}
+local vfxVolume = {}
+
+--[[----------------------------------------------------------------------------
+      Importing and setup
+--]]----------------------------------------------------------------------------
 
 function audio:setUp()
   audio:importMusic(audio.debug)
@@ -51,11 +72,12 @@ function audio:importMusic(printlist)
       local name = musicnames[i]
       name = name:sub(1, #name-4) -- Strip File Type
       audio.mus[name] = love.audio.newSource( path, "static" ) -- TODO: Change when 11.3 comes out.
+      musVolume[name] = 1
       musiclist = musiclist .. i .. ". " .. "'" .. name .. "'\n"
   end
   if printlist then print(musiclist) end
     musicnames, musiclist = nil, nil
-    print("HEY, CHANGE THIS TO STREAM WHEN 11.3 is out")
+    print("MUSIC SET TO STATIC - CHANGE WHEN 11.3 IS RELEASED.\n")
 end
 
 function audio:importSFX(printlist)
@@ -67,6 +89,7 @@ function audio:importSFX(printlist)
       local name = sfxnames[i]
       name = name:sub(1, #name-4) -- Strip File Type
       audio.sfx[name] = love.audio.newSource( path, "static" )
+      sfxVolume[name] = 1
       sfxlist = sfxlist .. i .. ". " .. "'" .. name .. "'\n"
   end
   if printlist then print(sfxlist) end
@@ -82,6 +105,7 @@ function audio:importVFX(printlist)
       local name = sfxnames[i]
       name = name:sub(1, #name-4) -- Strip File Type
       audio.vfx[name] = love.audio.newSource( path, "static" )-- TODO: Change when 11.3 comes out.
+      vfxVolume[name] = 1
       sfxlist = sfxlist .. i .. ". " .. "'" .. name .. "'\n"
   end
   if printlist then print(sfxlist) end
@@ -94,58 +118,196 @@ function audio:loopAllMusic()
   end
 end
 
-function audio:setMusic(musicName)
+--[[----------------------------------------------------------------------------
+      Global Volume Control
+--]]----------------------------------------------------------------------------
+
+function audio:setGlobalSFXVolume(value)
+  if value == nil then return end
+  if tonumber(value) == nil then return end
+  if value > 1 then value = 1 end -- Sound can not be set to over 1.
+  if value < 0.01 then value = 0 end -- Sound can not be set under 0.
+  globalVolumeSFX = value
+  for k,v in pairs(audio.sfx) do
+    audio.sfx[k]:setVolume(sfxVolume[k] * globalVolume * globalVolumeSFX)
+  end
+end
+
+function audio:setGlobalMusicVolume(value)
+  if value == nil then return end
+  if tonumber(value) == nil then return end
+  if value > 1 then value = 1 end -- Sound can not be set to volume over 1.
+  if value < 0.01 then value = 0 end -- Sound can not be set under 0.
+  globalVolumeMUS = value
+  for k,v in pairs(audio.mus) do
+    audio.mus[k]:setVolume(musVolume[k] * globalVolume * globalVolumeMUS)
+  end
+end
+
+function audio:setGlobalVFXVolume(value)
+  if value == nil then return end
+  if tonumber(value) == nil then return end
+  if value > 1 then value = 1 end -- Sound can not be set to over 1.
+  if value < 0.01 then value = 0 end -- Sound can not be set under 0.
+  globalVolumeVFX = value
+  for k,v in pairs(audio.sfx) do
+    audio.vfx[k]:setVolume(vfxVolume[k] * globalVolume * globalVolumeVFX)
+  end
+end
+
+function audio:setGlobalVolume(value)
+  if value == nil then return end
+  if tonumber(value) == nil then return end
+  if value > 1 then value = 1 end -- Sound can not be set to over 1.
+  if value < 0.01 then value = 0 end -- Sound can not be set under 0.
+  globalVolume = value
+  audio:setGlobalSFXVolume(globalVolumeSFX)
+  audio:setGlobalMusicVolume(globalVolumeMUS)
+  audio:setGlobalVFXVolume(globalVolumeVFX)
+end
+
+function audio:returnVolumeLevels()
+  return globalVolume, globalVolumeSFX, globalVolumeMUS, globalVolumeVFX
+end
+
+--[[----------------------------------------------------------------------------
+      Detailed Volume Control
+--]]----------------------------------------------------------------------------
+
+function audio:setSingleSFX(name, value)
+  if value == nil then return end
+  if tonumber(value) == nil then return end
+  if value > 1 then value = 1 end -- Sound can not be set to over 1.
+  if value < 0.01 then value = 0 end -- Sound can not be set under 0.
+  if sfxVolume[name] == nil then print("That sound does not exist.") return end
+  sfxVolume[name] = value
+  audio.sfx[name]:setVolume(sfxVolume[name] * globalVolume * globalVolumeSFX)
+  return sfxVolume[name]
+end
+
+function audio:setSingleMusic(name, value)
+  if value == nil then return end
+  if tonumber(value) == nil then return end
+  if value > 1 then value = 1 end -- Sound can not be set to over 1.
+  if value < 0.01 then value = 0 end -- Sound can not be set under 0.
+  if musVolume[name] == nil then print("That song does not exist.") return end
+  musVolume[name] = value
+  audio.mus[name]:setVolume(musVolume[name] * globalVolume * globalVolumeMUS)
+  return musVolume[name]
+end
+
+function audio:setSingleVFX(name, value)
+  if value == nil then return end
+  if tonumber(value) == nil then return end
+  if value > 1 then value = 1 end -- Sound can not be set to over 1.
+  if value < 0.01 then value = 0 end -- Sound can not be set under 0.
+  if vfxVolume[name] == nil then print("That voice does not exist.") return end
+  vfxVolume[name] = value
+  audio.vfx[name]:setVolume(vfxVolume[name] * globalVolume * globalVolumeVFX)
+  return vfxVolume[name]
+end
+
+--[[----------------------------------------------------------------------------
+      Batch Volume Control
+--]]----------------------------------------------------------------------------
+
+function audio:setBatchSFX(names, values)
+-- Note, this function has less protection than the single sets, use with care
+  if #names ~= #values then print("Length of tables do not match.") return end
+    for i=1, #names do
+      if sfxVolume[names[i]] == nil then print("Sound not found.") return end
+      if tonumber(values[i]) == nil then return end
+      sfxVolume[names[i]] = values[i]
+    end
+    audio:setGlobalSFXVolume(globalVolumeSFX)
+end
+
+function audio:setBatchMusic(names, values)
+-- Note, this function has less protection than the single sets, use with care
+  if #names ~= #values then print("Length of tables do not match.") return end
+    for i=1, #names do
+      if musVolume[names[i]] == nil then print("Music not found.") return end
+      if tonumber(values[i]) == nil then return end
+      musVolume[names[i]] = values[i]
+    end
+    audio:setGlobalMusicVolume(globalVolumeMUS)
+end
+
+function audio:setBatchVFX(names, values)
+-- Note, this function has less protection than the single sets, use with care
+  if #names ~= #values then print("Length of tables do not match.") return end
+    for i=1, #names do
+      if vfxVolume[names[i]] == nil then print("Sound not found.") return end
+      if tonumber(values[i]) == nil then return end
+      vfxVolume[names[i]] = values[i]
+    end
+      audio:setGlobalVFXVolume(globalVolumeVFX)
+end
+
+--[[----------------------------------------------------------------------------
+      Music Control
+--]]----------------------------------------------------------------------------
+
+function audio:setMusicPlay(musicName, musicLayer)
+  musicLayer = musicLayer or 1
   if musicName == nil then print("No Music Set!") return end
   if audio.mus[musicName] == nil then print("Not a song!") return end
-  if audio.currentmusic == musicName then
+  if audio.currentmusic[musicLayer] == musicName then
     print("Music is the same, no change!") return
   else
     for key, value in pairs(audio.mus) do
       audio.mus[key]:stop()
     end
     audio.mus[musicName]:play()
-    audio.currentmusic = musicName
+    audio.currentmusic[musicLayer] = musicName
   end
 end
 
-function audio:crossMusic(musicName)
+function audio:setMusic(musicName, musicLayer)
+  musicLayer = musicLayer or 1
   if musicName == nil then print("No Music Set!") return end
   if audio.mus[musicName] == nil then print("Not a song!") return end
-  if audio.currentmusic == musicName then
+  if audio.currentmusic[musicLayer] == musicName then
     print("Music is the same, no change!") return
   else
-    for key, value in pairs(audio.mus) do
-      audio.mus[key]:pause()
-    end
-    audio.mus[musicName]:seek(audio.mus[audio.currentmusic]:tell())
-    audio.mus[musicName]:play()
-    audio.currentmusic = musicName
+    audio.currentmusic[musicLayer] = musicName
   end
 end
 
-function audio:pauseMusic(musicName)
-  if audio.currentmusic == nil then print("No Music Set!") return end
-  if audio.mus[musicName] == nil then print("Not a song!") return end
-  audio.mus[musicName]:pause()
+function audio:playMusic(musicLayer)
+  musicLayer = musicLayer or 1
+  if audio.currentmusic[musicLayer] == nil then print("Not a layer!") return end
+  if audio.mus[audio.currentmusic[musicLayer]] == nil then print("Not a song!") return end
+  audio.mus[audio.currentmusic[musicLayer]]:play()
 end
 
-function audio:resumeMusic(musicName)
-  if audio.currentmusic == nil then print("No Music Set!") return end
-  if audio.mus[musicName] == nil then print("Not a song!") return end
-  audio.mus[musicName]:play()
+function audio:pauseMusic(musicLayer)
+  musicLayer = musicLayer or 1
+  if audio.currentmusic[musicLayer] == nil then print("Not a layer!") return end
+  if audio.mus[audio.currentmusic[musicLayer]] == nil then print("Not a song!") return end
+  audio.mus[audio.currentmusic[musicLayer]]:pause()
 end
 
-function audio:restartMusic(musicName)
-  if audio.currentmusic == nil then print("No Music Set!") return end
-  if audio.mus[musicName] == nil then print("Not a song!") return end
-  audio.mus[musicName]:seek(0)
-  audio.mus[musicName]:play()
+function audio:resumeMusic(musicLayer)
+  musicLayer = musicLayer or 1
+  if audio.currentmusic[musicLayer] == nil then print("Not a layer!") return end
+  if audio.mus[audio.currentmusic[musicLayer]] == nil then print("Not a song!") return end
+  audio.mus[audio.currentmusic[musicLayer]]:play()
 end
 
-function audio:stopMusic(musicName)
-  if audio.currentmusic == nil then print("No Music Set!") return end
-  if audio.mus[musicName] == nil then print("Not a song!") return end
-  audio.mus[musicName]:stop()
+function audio:restartMusic(musicLayer)
+  musicLayer = musicLayer or 1
+  if audio.currentmusic[musicLayer] == nil then print("Not a layer!") return end
+  if audio.mus[audio.currentmusic[musicLayer]] == nil then print("Not a song!") return end
+  audio.mus[audio.currentmusic[musicLayer]]:seek(0)
+  audio.mus[audio.currentmusic[musicLayer]]:play()
+end
+
+function audio:stopMusic(musicLayer)
+  musicLayer = musicLayer or 1
+  if audio.currentmusic[musicLayer] == nil then print("Not a layer!") return end
+  if audio.mus[audio.currentmusic[musicLayer]] == nil then print("Not a song!") return end
+  audio.mus[audio.currentmusic[musicLayer]]:stop()
 end
 
 function audio:stopAllMusic()
@@ -153,6 +315,25 @@ function audio:stopAllMusic()
     audio.mus[key]:stop()
   end
 end
+
+function audio:crossMusic(layer1, layer2)
+  if audio.currentmusic[layer1] == nil then print("Not a layer!") return end
+  if audio.currentmusic[layer2] == nil then print("Not a layer!") return end
+    audio:pauseMusic(layer1)
+    audio:pauseMusic(layer2)
+    audio.mus[audio.currentmusic[layer2]]:seek(audio.mus[audio.currentmusic[layer1]]:tell())
+    audio:playMusic(layer2)
+end
+
+function audio:clearMusic()
+  audio:stopAllMusic()
+  audio.currentmusic = {}
+  audio.currentmusic[1] = nil
+end
+
+--[[----------------------------------------------------------------------------
+      SFX Control
+--]]----------------------------------------------------------------------------
 
 function audio:stopAllSFX()
   for key, value in pairs(audio.sfx) do
@@ -172,6 +353,10 @@ function audio:sfxForcePlay(SFXName)
   audio.sfx[SFXName]:stop()
   audio.sfx[SFXName]:play()
 end
+
+--[[----------------------------------------------------------------------------
+      VFX Control
+--]]----------------------------------------------------------------------------
 
 function audio:stopAllVFX()
   for key, value in pairs(audio.vfx) do
