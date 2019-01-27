@@ -139,7 +139,7 @@ A Pixel Perfect Screen Scaler for Love2D.
 ### Including in your project
 ```Pixels = require 'path.to.pixels'```
 ```Pixels:load()``` -- Set the default screen scale, if not assigned it will do the max window size that fits within the current screen.<br><br>
-At the start of love:draw() insert: ```  Pixels:drawGameArea()``` then at the end, after ahh your draw code, put ```Pixels:endDrawGameArea()```
+At the start of love:draw() insert: ```  Pixels:drawGameArea()``` then at the end, after all your draw code, put ```Pixels:endDrawGameArea()```
 
 ### Configuration / Control
 Note: Make sure conf.lua has the proper 1x size width and height for your project.
