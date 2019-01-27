@@ -18,7 +18,7 @@ SLog Audio is a wrapper around LOVE2D's audio functions, with automatic import f
 Currently Love2D 11.2 has an issue with streaming music, this will be corrected in 11.3
 
 ### Configuration / Control
-```Audio.currentmusic[#]``` -- What music is currently playing
+```Audio.currentmusic[#]``` -- What music is currently playing<br>
 ```Audio.debug = true``` -- Print the list of audio files to the console on game load.
 
 ### Functions - Music
@@ -133,7 +133,7 @@ A quick image to palette table command.
 ### Using
 ```love.graphics.setColor(Palette[#])``` -- Where # is a number in your palette.
 
-## SLog Palette
+## SLog Pixels
 A Pixel Perfect Screen Scaler for Love2D.
 
 ### Including in your project
