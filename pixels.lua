@@ -2,7 +2,8 @@ local pixels = {
   _NAME        = 'SLog Pixels',
   _VERSION     = '1.4',
   _DESCRIPTION = 'A Pixel Perfect Screen Scaler for Love2D',
-  _URL         = 'https://github.com/SystemLogoff/SLog-Library',
+  _URL         = 'https://github.com/SystemLogoff/SLog-Library/',
+  _Old_URL         = 'https://github.com/SystemLogoff/lovePixel',
   _LICENSE     = [[
     MIT LICENSE
 
@@ -29,7 +30,7 @@ local pixels = {
   ]]
 }
 
--- note if using hump camera: camera:attach(x,y,w,h, noclip)
+-- note to self: camera:attach(x,y,w,h, noclip)
 -- note camera:attach(x,y,love.graphics.getWidth() / pixels.scale,love.graphics.getHeight() / lovePixels.scale, noclip)
 
 local baseWidth = love.graphics.getWidth() -- Capture the conf.lua settings for Window Size
@@ -79,7 +80,7 @@ function pixels:calcMaxScale() -- This is a much better way to do this.
              -- We do -100 here to keep max window size in check from bleeding off the sides of the screen in Windows.
              pixels.maxWindowScale = math.floor((pixels.monitorWidth - 100) / baseWidth)
         end
-        print("Game Max Scale: " .. pixels.maxScale .. "\nGame Max Windowed Scale: " .. pixels.maxWindowScale .. "\n")
+        --print("Game Max Scale: " .. pixels.maxScale .. "\nGame Max Windowed Scale: " .. pixels.maxWindowScale .. "\n")
 end
 
 -- This should work on all monitors now? I think??
@@ -163,7 +164,7 @@ end
 if allowUserResize then
   --Override the love.resize.
   function love.resize(w,h)
-    print(w,h)
+    --print(w,h)
     if h ~= pixels.monitorHeight or w ~= pixels.monitorWidth then -- Cheap hack to allow full screen and resize
       if pixels.scale < math.floor(pixels.maxWindowScale)  then
         pixels:resizeScreen(pixels.scale + 1)

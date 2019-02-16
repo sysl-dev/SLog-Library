@@ -28,8 +28,12 @@ local palette = {
     SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   ]]
 }
+local pathtoimage = "library/slog/palette.png"
 
-palette.fileLocation = "library/slog/palette.png" -- Point to your palette file.
+local info = love.filesystem.getInfo( pathtoimage, "file" )
+if info == nil then print("File not found. SLog Palette not loaded.") return end
+
+palette.fileLocation = pathtoimage -- Point to your palette file.
 palette.squareSize = 32
 
 local image = love.image.newImageData(palette.fileLocation) -- Temp load the image

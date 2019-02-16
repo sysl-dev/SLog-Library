@@ -29,9 +29,10 @@ local floppy = {
     SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   ]]
 }
-local smallFolkName = "Smallfolk" -- Name of loaded smallfolk library
-if _G[smallFolkName] == nil then print("Floppy requires Smallfolk to work. / Floppy disabled") return nil end
-local Smallfolk = _G[smallFolkName]
+
+if package.loaded["library.smallfolk.smallfolk"] == nil then -- Floppy requires smallfolk, change to library path
+  print("Floppy requires Smallfolk to work. / Floppy disabled") return nil
+end
 
 floppy.filetype = ".txt" -- Saves end with this, change to "" to end with nothing.
 
