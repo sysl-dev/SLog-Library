@@ -180,12 +180,30 @@ function pixels:fullscreenToggle()
 end
 
 --[[ Notes ]]-------------------------------------------------------------------
--- This function will control resizing with the window. TODO: AAAAH
+-- This function will control resizing with the window.
 if windowResize then
-  --Override the love.resize.
   function love.resize(w,h)
-  print(("Window resized to width: %d and height: %d."):format(w, h))
-  print(w,h)
+    -- Capture all scales
+    local scales = {}
+    for i=1, pixels.maxWindowScale do
+      scales[i] = {baseWidth * i, baseHeight * i}
+    end
+    local setscale = 1
+    for i=1, #scales do
+      if w > scales[i][1] then
+        setscale = setscale + 1
+      end
+    end
+
+    if setscale == pixels.scale then
+      if w < baseWidth * setscale then setscale = setscale - 1 end
+    end
+
+    if setscale == 0 then setscale = 1 end
+    if setscale > pixels.maxWindowScale then setscale = pixels.maxWindowScale end
+
+    pixels:resizeScreen(setscale)
+
   end
 end
 
