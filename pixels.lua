@@ -30,26 +30,49 @@ local pixels = {
   ]]
 }
 
--- note to self: camera:attach(x,y,w,h, noclip)
--- note camera:attach(x,y,love.graphics.getWidth() / pixels.scale,love.graphics.getHeight() / lovePixels.scale, noclip)
 
-local baseWidth = love.graphics.getWidth() -- Capture the conf.lua settings for Window Size
-local baseHeight = love.graphics.getHeight()
--- Config
-local allowUserResize = false -- Alow users to resize the window with window controls.
--- Table holding the string to each cursor. Note: Make it blank if you don't plan on using a cursor.
-local cursorTable = {{"library/slog/cursor1.png",0,0},} -- Format {Path, -X, -Y offsets}
-pixels.cursors = {} -- Table to hold image pointer for all cursors.
-for k,v in pairs(cursorTable) do
-  pixels.cursors[k] = love.graphics.newImage(v[1])
-end
-pixels.currentCursor = 0 -- Cursor to start with. 0 = No cursor.
-pixels.showSystemCursor = true -- Show the system cursor.
-pixels.drawBG = true -- Draw a blackBG behind everything.
+--[[ Configuration ]]-----------------------------------------------------------
+-- A requirement for pixel perfect scaling.
+  love.graphics.setDefaultFilter( "nearest", "nearest", 1 )
 
+-- Capture the conf.lua settings for Window Size
+  local baseWidth = love.graphics.getWidth()
+  local baseHeight = love.graphics.getHeight()
+
+-- Allow user to resize the window with window controls.
+  local windowResize = true
+
+-- Draw a black BG behind the pixel canvas.
+  pixels.drawBG = true
+
+-- Table defining all graphical cursors used.
+---- Format {Path to image, -X offset, -Y offset}
+---- If unused, cursorTable = {{}} is reccomended
+  local cursorTable = {{"texture/system/cursor1.png",0,0},}
+
+-- Table, loads all cursors from cursorTable and assigned them as a new image.
+  pixels.cursors = {}
+  for k,v in pairs(cursorTable) do
+    pixels.cursors[k] = love.graphics.newImage(v[1])
+  end
+
+-- The current graphical cursor to use, 0 is a blank cursor.
+  pixels.currentCursor = 1
+
+-- Show the system cursor at startup.
+  pixels.showSystemCursor = true
+
+-- Name of table to hold canvas screenshots
+  local name_screenshots = "screenshots"
+  pixels[name_screenshots] = {}
+
+--[[ End Configuration ]]-------------------------------------------------------
+
+--[[ Notes ]]-------------------------------------------------------------------
+-- Loads Pixels
+-- Will use the max possible scale if none is defined.
 function pixels:load(defaultScale)
-    love.graphics.setDefaultFilter( "nearest", "nearest", 1 )
-    pixels.mainCanvas = love.graphics.newCanvas(baseWidth,baseHeight)
+    pixels.canvas = love.graphics.newCanvas(baseWidth,baseHeight)
     pixels:monitorSize()
     pixels:calcMaxScale()
     pixels:calcOffset()
@@ -58,53 +81,66 @@ function pixels:load(defaultScale)
     pixels:resizeScreen(defaultScale)
 end
 
--- Only supports main screen. Game -> TV is usually screen mirroring.
+--[[ Notes ]]-------------------------------------------------------------------
+-- Include in your main update loop.
+-- Updates offset and the pixel mouse position.
+function pixels:update(dt)
+  pixels:pixelMouse()
+  pixels:calcOffset()
+end
+
+--[[ Notes ]]-------------------------------------------------------------------
+-- Calculates the monitor size and stores it for later use.
+-- Only calculates on the main screen, because that's 99% of what people use.
 function pixels:monitorSize()
     local width, height = love.window.getDesktopDimensions(1)
-    pixels.monitorWidth = width
-    pixels.monitorHeight = height
+    pixels.monitor = {w = width, h = height}
 end
 
+--[[ Notes ]]-------------------------------------------------------------------
+-- Calculates the max scale of the windowed game and fullscreen game
 function pixels:calcMaxScale() -- This is a much better way to do this.
-    pixels.maxWindowScale = 3
-    pixels.maxScale = 4
-    local floatHeight = (pixels.monitorHeight) / baseHeight
-    local floatWidth = (pixels.monitorWidth) / baseWidth
+  local floatWidth = (pixels.monitor.w) / baseWidth
+  local floatHeight = (pixels.monitor.h) / baseHeight
 
-        if floatHeight < floatWidth then
-            pixels.maxScale = (pixels.monitorHeight) / baseHeight
-            -- We do -100 here to keep max window size in check from bleeding off the top and bottom of the screen in Windows.
-            pixels.maxWindowScale = math.floor((pixels.monitorHeight - 100) / baseHeight)
-        else
-             pixels.maxScale = (pixels.monitorWidth) / baseWidth
-             -- We do -100 here to keep max window size in check from bleeding off the sides of the screen in Windows.
-             pixels.maxWindowScale = math.floor((pixels.monitorWidth - 100) / baseWidth)
-        end
-        --print("Game Max Scale: " .. pixels.maxScale .. "\nGame Max Windowed Scale: " .. pixels.maxWindowScale .. "\n")
+  if floatHeight < floatWidth then
+      pixels.maxScale = (pixels.monitor.h) / baseHeight
+      -- Subtract 100 to adjust for taskbar
+      pixels.maxWindowScale = math.floor((pixels.monitor.h - 100) / baseHeight)
+  else
+       pixels.maxScale = (pixels.monitor.w) / baseWidth
+       -- Subtract 100 to adjust for taskbar
+       pixels.maxWindowScale = math.floor((pixels.monitor.w - 100) / baseWidth)
+  end
 end
 
--- This should work on all monitors now? I think??
-function pixels:calcOffset()
-    local xgamearea = baseWidth * pixels.maxScale
-    local width = pixels.monitorWidth
-    local xblankspace = width - xgamearea
+--[[ Notes ]]-------------------------------------------------------------------
+-- Calculates the offset to draw the canvas in if fullscreen.
+-- If it's not fullscreen, don't bother with offset.
+function pixels:calcOffset(width, height)
+  width = width or pixels.monitor.w
+  height = height or pixels.monitor.h
 
-    local ygamearea = baseHeight * pixels.maxScale
-    local height = pixels.monitorHeight
-    local yblankspace = height - ygamearea
+  local gameWidth = baseWidth * pixels.maxScale
+  local blankWidth = width - gameWidth
 
-    pixels.xoffset = math.floor(xblankspace/2)
-    pixels.yoffset = math.floor(yblankspace/2)
+  local gameHeight = baseHeight * pixels.maxScale
+  local blankHeight = height - gameHeight
 
-    if love.window.getFullscreen() == false then -- Don't care about offset if not fullscreen.
-        pixels.xoffset = 0
-        pixels.yoffset = 0
-    end
+  pixels.offset = {
+    x = math.floor(blankWidth/2),
+    y = math.floor(blankHeight/2)
+  }
+
+  if love.window.getFullscreen() == false then
+      pixels.offset = {x=0, y=0}
+  end
 end
 
--- This creates the Canvas we draw all assets on then scale up later.
+--[[ Notes ]]-------------------------------------------------------------------
+-- This function will put everything drawn after into Pixels scaling canvas.
 function pixels:drawGameArea()
-    love.graphics.setCanvas(pixels.mainCanvas)
+    love.graphics.setCanvas(pixels.canvas)
     if pixels.drawBG then
       love.graphics.setColor(0,0,0,1)
       love.graphics.rectangle("fill", 0, 0, baseWidth, baseHeight)
@@ -112,45 +148,27 @@ function pixels:drawGameArea()
     love.graphics.setColor(1,1,1,1)
 end
 
--- Stop drawing the canvas so we can take it and scale it.
+--[[ Notes ]]-------------------------------------------------------------------
+-- Put this after you are done drawing to return to the default canvas and
+-- draw the image scaled to the window.
+-- Also includes the graphical cursor, if enabled.
 function pixels:endDrawGameArea()
   if pixels.currentCursor > 0 and pixels.currentCursor <= #pixels.cursors then -- If cursor is not 0 or not out of bounds, draw it.
-    love.graphics.draw(pixels.cursors[pixels.currentCursor],pixels.mousex - cursorTable[pixels.currentCursor][2],pixels.mousey- cursorTable[pixels.currentCursor][3])
+    love.graphics.draw(pixels.cursors[pixels.currentCursor],pixels.mouse.x - cursorTable[pixels.currentCursor][2],pixels.mouse.y- cursorTable[pixels.currentCursor][3])
   end
     love.graphics.setCanvas()
-    love.graphics.draw(pixels.mainCanvas, 0 + pixels.xoffset , 0 + pixels.yoffset, 0, pixels.scale, pixels.scale)
+    love.graphics.draw(pixels.canvas, 0 + pixels.offset.x , 0 + pixels.offset.y, 0, pixels.scale, pixels.scale)
 end
 
--- Call this function to resize the screen with a new scale.
+--[[ Notes ]]-------------------------------------------------------------------
+-- This function is called to resize the screen.
 function pixels:resizeScreen(newScale)
     pixels.scale = newScale
-    love.window.setMode(baseWidth * pixels.scale, baseHeight * pixels.scale, {fullscreen = false, resizable = allowUserResize, highdpi = false})
+    love.window.setMode(baseWidth * pixels.scale, baseHeight * pixels.scale, {fullscreen = false, resizable = windowResize, highdpi = false})
 end
 
--- pixelMouse watches where we click to match it with the scaled game area.
--- include in love.update if you use mouse in your game.
-function pixels:pixelMouse()
-    pixels.mousey = math.floor((love.mouse.getY() - pixels.yoffset)/pixels.scale)
-    pixels.mousex = math.floor((love.mouse.getX() - pixels.xoffset)/pixels.scale)
-end
-
-function pixels:toggleCursor()
-  love.mouse.setVisible(love.mouse.isVisible())
-end
-
-function pixels:forceCursor(onoff)
-  love.mouse.setVisible(onoff)
-end
-
-function pixels:setCursor(cursorNumber)
-  if cursorNumber <= #pixels.cursors and cursorNumber >=0 then
-    pixels.currentCursor = cursorNumber
-  else
-    print("Not a valid cursor number.")
-  end
-end
-
-
+--[[ Notes ]]-------------------------------------------------------------------
+-- This function is sets the game to fullscreen or returns to windowed mode.
 function pixels:fullscreenToggle()
     if love.window.getFullscreen() == false then
         pixels:resizeScreen(pixels.maxScale)
@@ -161,19 +179,105 @@ function pixels:fullscreenToggle()
     end
 end
 
-if allowUserResize then
+--[[ Notes ]]-------------------------------------------------------------------
+-- This function will control resizing with the window. TODO: AAAAH
+if windowResize then
   --Override the love.resize.
   function love.resize(w,h)
-    --print(w,h)
-    if h ~= pixels.monitorHeight or w ~= pixels.monitorWidth then -- Cheap hack to allow full screen and resize
-      if pixels.scale < math.floor(pixels.maxWindowScale)  then
-        pixels:resizeScreen(pixels.scale + 1)
-      else
-        pixels:resizeScreen(1)
-      end
-    else
-    end
+  print(("Window resized to width: %d and height: %d."):format(w, h))
+  print(w,h)
   end
 end
 
+--[[ Pixel Cursor ]]------------------------------------------------------------
+--[[ Notes ]]-------------------------------------------------------------------
+-- This updates the pixel mouse, replaces the love.mouse for checking for mouse
+-- position.
+function pixels:pixelMouse()
+    pixels.mouse = {
+      x = math.floor((love.mouse.getX() - pixels.offset.x)/pixels.scale),
+      y = math.floor((love.mouse.getY() - pixels.offset.y)/pixels.scale)
+    }
+end
+
+--[[ Notes ]]-------------------------------------------------------------------
+-- This function toggles the system cursor.
+function pixels:toggleCursor()
+  love.mouse.setVisible(love.mouse.isVisible())
+end
+
+--[[ Notes ]]-------------------------------------------------------------------
+-- This function sets the system cursor. Uses true/false.
+function pixels:forceCursor(onoff)
+  love.mouse.setVisible(onoff)
+end
+
+--[[ Notes ]]-------------------------------------------------------------------
+-- This function sets the graphical cursor, will not set an invalid cursor.
+function pixels:setCursor(cursorNumber)
+  if cursorNumber <= #pixels.cursors and cursorNumber >=0 then
+    pixels.currentCursor = cursorNumber
+  else
+    print("Not a valid cursor number.")
+  end
+end
+
+--[[ Notes ]]-------------------------------------------------------------------
+-- Check to see if the pixel mouse in in a defined area.
+-- Uses a 3x3 hit rectangle if nothing is defined for the mouse.
+function pixels:mousearea(x1,y1,w1,h1,  mx,my,mw,mh)
+  mw = mw or 3
+  mh = mh or 3
+  mx = mx or pixels.mouse.x
+  my = my or pixels.mouse.y
+  return x1 < mx+mw and
+         mx < x1+w1 and
+         y1 < my+mh and
+         my < y1+h1
+end
+
+--[[ Pixel Screenshot ]]--------------------------------------------------------
+--[[ Notes ]]-------------------------------------------------------------------
+-- Capture a screenshot, with a name.
+-- Can define a seperate screenshot bank.
+-- Note, does not last past the game closing.
+function pixels:screenshot(name, picture)
+  name = name or "default"
+  picture = picture or name_screenshots
+  if pixels[picture] == nil then
+    pixels[picture] = {}
+  end
+  local capture = Pixels.canvas:newImageData( 1, 1, 0, 0, baseWidth, baseHeight )
+  pixels[picture][name] = love.graphics.newImage(capture)
+end
+
+--[[ Notes ]]-------------------------------------------------------------------
+-- Erases all screenshots
+function pixels:screenshotClearAll(picture)
+  picture = picture or name_screenshots
+  pixels[picture] = {}
+end
+
+--[[ Notes ]]-------------------------------------------------------------------
+-- Erases a screenshot.
+function pixels:screenshotClear(name, picture)
+  name = name or "default"
+  picture = picture or name_screenshots
+  pixels[picture] = {}
+end
+
+--[[ Notes ]]-------------------------------------------------------------------
+-- Check to see if the screenshot/bank exists, reccomended before trying to draw
+function pixels:screenshotExist(name, picture)
+  name = name or "default"
+  picture = picture or name_screenshots
+  if pixels[picture] == nil then
+    pixels[picture] = {}
+  end
+  if pixels[picture][name] ~= nil then return true else return false end
+end
+
+
+--[[ Notes ]]-------------------------------------------------------------------
+-- End of library.
 return pixels
