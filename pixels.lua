@@ -1,6 +1,6 @@
 local pixels = {
   _NAME        = 'SLog Pixels',
-  _VERSION     = '1.4',
+  _VERSION     = '2.0',
   _DESCRIPTION = 'A Pixel Perfect Screen Scaler for Love2D',
   _URL         = 'https://github.com/SystemLogoff/SLog-Library/',
   _Old_URL         = 'https://github.com/SystemLogoff/lovePixel',
