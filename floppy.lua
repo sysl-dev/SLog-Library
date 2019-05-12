@@ -30,12 +30,26 @@ local floppy = {
   ]]
 }
 
-if package.loaded["library.smallfolk.smallfolk"] == nil then -- Floppy requires smallfolk, change to library path
+--[[ Configuration ]]-----------------------------------------------------------
+-- Floppy requires smallfolk, will not function without it.
+local path_to_smallfolk_package = "library.smallfolk.smallfolk"
+
+-- Save files end with this string.
+floppy.filetype = ".txt"
+
+-- Default table to save to file
+floppy.ram = "ram"
+
+--[[ End Configuration ]]-------------------------------------------------------
+
+--[[ Notes ]]-------------------------------------------------------------------
+-- Confirms that smallfolk is loaded.
+if package.loaded[path_to_smallfolk_package] == nil then
   print("Floppy requires Smallfolk to work. / Floppy disabled") return nil
 end
 
-floppy.filetype = ".txt" -- Saves end with this, change to "" to end with nothing.
-
+--[[ Notes ]]-------------------------------------------------------------------
+-- Saves memory to file though smallfolk
 function floppy:save(filename, memory)
   local didwork, savemessage
   if type(filename) ~= type("STRING") then
@@ -44,11 +58,13 @@ function floppy:save(filename, memory)
   if not (filename:match("%w")) then
     print("Floppy only supports A-Z, a-z and 0-9.") return
   end
-  if memory == nil then print("NOTHING TO SAVE") return end
+  memory = memory or _G[floppy.ram]
   didwork, savemessage = love.filesystem.write(filename .. floppy.filetype, Smallfolk.dumps(memory))
   print("Save?", didwork, "Notes:", savemessage)
 end
 
+--[[ Notes ]]-------------------------------------------------------------------
+-- Delete saved file
 function floppy:delete(filename)
   local didwork, savemessage
   if type(filename) ~= type("STRING") then
@@ -61,7 +77,25 @@ function floppy:delete(filename)
   print("Deleted?", didwork)
 end
 
+--[[ Notes ]]-------------------------------------------------------------------
+-- Load save file into default table
 function floppy:load(filename) -- memory = floppy:load(filename)
+  local contents, size
+  if type(filename) ~= type("STRING") then
+    print("Floppy only supports strings for save files.") return
+  end
+  if not (filename:match("%w")) then
+    print("Floppy only supports A-Z, a-z and 0-9.") return
+  end
+  contents, size = love.filesystem.read(filename .. floppy.filetype)
+  if contents then _G[floppy.ram] = Smallfolk.loads(contents) else print("Nothing in save file") return nil end
+  print("Size/Notes", size)
+end
+
+--[[ Notes ]]-------------------------------------------------------------------
+-- Load save file into a different table
+-- table = floppy:load(filename)
+function floppy:loadas(filename)
   local contents, size
   if type(filename) ~= type("STRING") then
     print("Floppy only supports strings for save files.") return
@@ -74,5 +108,5 @@ function floppy:load(filename) -- memory = floppy:load(filename)
   print("Size/Notes", size)
 end
 
-
+--[[ End of library ]]----------------------------------------------------------
 return floppy

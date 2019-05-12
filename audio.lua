@@ -1,6 +1,6 @@
 local audio = {
   _NAME        = 'SLog Audio',
-  _VERSION     = '0.1',
+  _VERSION     = '0.5',
   _DESCRIPTION = 'Lazy Audio Controller',
   _URL         = 'https://github.com/SystemLogoff/SLog-Library',
   _LICENSE     = [[
@@ -27,355 +27,335 @@ local audio = {
     TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
     SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   ]],
-  _Note = "Assumes: That you use music, sfx, vfx as folders."}
+}
+--[[ Configuration ]]-----------------------------------------------------------
 
-  --[[----------------------------------------------------------------------------
-        Configuration
-  --]]----------------------------------------------------------------------------
+-- Folder where your audio is kept.
+local path_to_audio_folder = "audio"
 
-audio.currentmusic = {}
-audio.currentmusic[1] = nil
+-- List files on startup in the console
+local list_files = true
 
-audio.debug = false
-audio.sfx = {} -- Container for sfx
-audio.mus = {} -- Container for music
-audio.vfx = {} -- Contaciner for Voice Acting
+-- What folders of audio need to loop
+local groups_to_loop = {"env", "music"}
 
--- Volume of the tracks.
-local globalVolume = 1
-local globalVolumeSFX = 1
-local globalVolumeMUS = 1
-local globalVolumeVFX = 1
+-- Default local audio volume
+local default_volume = 0.5
 
--- Table holding the volume of each sound.
-local sfxVolume = {}
-local musVolume = {}
-local vfxVolume = {}
+-- Default global audio volume
+local default_global_volume = 1
 
---[[----------------------------------------------------------------------------
-      Importing and setup
---]]----------------------------------------------------------------------------
+-- Volume for all sounds
+audio.global = {}  -- audio.global.[audio_folders]
+audio.global.all = default_global_volume
 
+-- This table stores the volume of audio so we can update the global settings.
+audio.volume = {}
+
+-- DJ, controls the music that is playing.
+audio.dj = {}
+-- Current audio tracks.
+audio.dj.tracks = {}
+audio.dj.forced = nil
+
+--[[ End Configuration ]]-------------------------------------------------------
+
+--[[ Notes ]]-------------------------------------------------------------------
+-- Does all required audio functions to start using the media right away.
 function audio:setUp()
-  audio:importMusic(audio.debug)
-  audio:loopAllMusic()
-  audio:importSFX(audio.debug)
-  audio:importVFX(audio.debug)
+audio:importAll()
+audio:loopAll(groups_to_loop)
+
+if list_files then audio:listAllFiles() end -- Enable for testing.
 end
 
-function audio:importMusic(printlist)
-  printlist = printlist or false
-  local musicnames = love.filesystem.getDirectoryItems( "music" )
-  local musiclist = "Music List: \n"
-  for i = 1, #musicnames do
-    	local path = "music/" .. musicnames[i]
-      local name = musicnames[i]
-      name = name:sub(1, #name-4) -- Strip File Type
-      audio.mus[name] = love.audio.newSource( path, "static" ) -- TODO: Change when 11.3 comes out.
-      musVolume[name] = 1
-      musiclist = musiclist .. i .. ". " .. "'" .. name .. "'\n"
+--[[ Importing and File Lists ]]------------------------------------------------
+--[[ Notes ]]-------------------------------------------------------------------
+-- Imports all media in audio folders.
+function audio:importAll(folder_path)
+  folder_path = folder_path or path_to_audio_folder
+  if folder_path == nil then print("No Folder Loaded, Exiting.") return end
+  local folder_items = love.filesystem.getDirectoryItems(folder_path)
+  for i = 1, #folder_items do
+    local name = folder_items[i]
+    local path = folder_path .. "/" .. name
+    if not audio[name] then audio[name] = {} end -- Create audio tables if nil
+    if not audio.volume[name] then audio.volume[name] = {} end -- sound tables
+    if not audio.global[name] then audio.global[name] = default_global_volume end -- Global Volumes
+    audio:importFolder(name, path)
   end
-  if printlist then print(musiclist) end
-    musicnames, musiclist = nil, nil
-    print("MUSIC SET TO STATIC - CHANGE WHEN 11.3 IS RELEASED.\n")
-end
 
-function audio:importSFX(printlist)
-  printlist = printlist or false
-  local sfxnames = love.filesystem.getDirectoryItems( "sfx" )
-  local sfxlist = "Sound List: \n"
+end
+--[[ Notes ]]-------------------------------------------------------------------
+-- Imports the all files in a folder as an audio folder.
+function audio:importFolder(name, path)
+  local sfxnames = love.filesystem.getDirectoryItems( path )
   for i = 1, #sfxnames do
-    	local path = "sfx/" .. sfxnames[i]
-      local name = sfxnames[i]
-      name = name:sub(1, #name-4) -- Strip File Type
-      audio.sfx[name] = love.audio.newSource( path, "static" )
-      sfxVolume[name] = 1
-      sfxlist = sfxlist .. i .. ". " .. "'" .. name .. "'\n"
-  end
-  if printlist then print(sfxlist) end
-  sfxnames, sfxlist = nil, nil
-end
-
-function audio:importVFX(printlist)
-  printlist = printlist or false
-  local sfxnames = love.filesystem.getDirectoryItems( "vfx" )
-  local sfxlist = "Voice Acting List: \n"
-  for i = 1, #sfxnames do
-    	local path = "vfx/" .. sfxnames[i]
-      local name = sfxnames[i]
-      name = name:sub(1, #name-4) -- Strip File Type
-      audio.vfx[name] = love.audio.newSource( path, "static" )-- TODO: Change when 11.3 comes out.
-      vfxVolume[name] = 1
-      sfxlist = sfxlist .. i .. ". " .. "'" .. name .. "'\n"
-  end
-  if printlist then print(sfxlist) end
-  sfxnames, sfxlist = nil, nil
-end
-
-function audio:loopAllMusic()
-  for k,v in pairs(audio.mus) do
-    audio.mus[k]:setLooping(true)
+    	local path = path .. "/" .. sfxnames[i]
+      local file_name = sfxnames[i]
+      file_name = file_name:sub(1, #file_name-4) -- Strip File Type
+      audio[name][file_name] = love.audio.newSource( path, "static" ) -- Update when 11.3 comes out with audio fixes.
+      audio.volume[name][file_name] = default_volume
+      audio[name][file_name]:setVolume(audio.volume[name][file_name] * audio.global[name] * audio.global.all)
   end
 end
+--[[ Notes ]]-------------------------------------------------------------------
+-- Lists all the audio files that are imported.
+function audio:listAllFiles(folder_path)
+  folder_path = folder_path or path_to_audio_folder
+  if folder_path == nil then print("No Folder Loaded, Exiting.") return end
 
---[[----------------------------------------------------------------------------
-      Global Volume Control
---]]----------------------------------------------------------------------------
+  local folder_items = love.filesystem.getDirectoryItems(folder_path)
 
-function audio:setGlobalSFXVolume(value)
-  if value == nil then return end
-  if tonumber(value) == nil then return end
-  if value > 1 then value = 1 end -- Sound can not be set to over 1.
-  if value < 0.01 then value = 0 end -- Sound can not be set under 0.
-  globalVolumeSFX = value
-  for k,v in pairs(audio.sfx) do
-    audio.sfx[k]:setVolume(sfxVolume[k] * globalVolume * globalVolumeSFX)
-  end
-end
-
-function audio:setGlobalMusicVolume(value)
-  if value == nil then return end
-  if tonumber(value) == nil then return end
-  if value > 1 then value = 1 end -- Sound can not be set to volume over 1.
-  if value < 0.01 then value = 0 end -- Sound can not be set under 0.
-  globalVolumeMUS = value
-  for k,v in pairs(audio.mus) do
-    audio.mus[k]:setVolume(musVolume[k] * globalVolume * globalVolumeMUS)
-  end
-end
-
-function audio:setGlobalVFXVolume(value)
-  if value == nil then return end
-  if tonumber(value) == nil then return end
-  if value > 1 then value = 1 end -- Sound can not be set to over 1.
-  if value < 0.01 then value = 0 end -- Sound can not be set under 0.
-  globalVolumeVFX = value
-  for k,v in pairs(audio.sfx) do
-    audio.vfx[k]:setVolume(vfxVolume[k] * globalVolume * globalVolumeVFX)
-  end
-end
-
-function audio:setGlobalVolume(value)
-  if value == nil then return end
-  if tonumber(value) == nil then return end
-  if value > 1 then value = 1 end -- Sound can not be set to over 1.
-  if value < 0.01 then value = 0 end -- Sound can not be set under 0.
-  globalVolume = value
-  audio:setGlobalSFXVolume(globalVolumeSFX)
-  audio:setGlobalMusicVolume(globalVolumeMUS)
-  audio:setGlobalVFXVolume(globalVolumeVFX)
-end
-
-function audio:returnVolumeLevels()
-  return globalVolume, globalVolumeSFX, globalVolumeMUS, globalVolumeVFX
-end
-
---[[----------------------------------------------------------------------------
-      Detailed Volume Control
---]]----------------------------------------------------------------------------
-
-function audio:setSingleSFX(name, value)
-  if value == nil then return end
-  if tonumber(value) == nil then return end
-  if value > 1 then value = 1 end -- Sound can not be set to over 1.
-  if value < 0.01 then value = 0 end -- Sound can not be set under 0.
-  if sfxVolume[name] == nil then print("That sound does not exist.") return end
-  sfxVolume[name] = value
-  audio.sfx[name]:setVolume(sfxVolume[name] * globalVolume * globalVolumeSFX)
-  return sfxVolume[name]
-end
-
-function audio:setSingleMusic(name, value)
-  if value == nil then return end
-  if tonumber(value) == nil then return end
-  if value > 1 then value = 1 end -- Sound can not be set to over 1.
-  if value < 0.01 then value = 0 end -- Sound can not be set under 0.
-  if musVolume[name] == nil then print("That song does not exist.") return end
-  musVolume[name] = value
-  audio.mus[name]:setVolume(musVolume[name] * globalVolume * globalVolumeMUS)
-  return musVolume[name]
-end
-
-function audio:setSingleVFX(name, value)
-  if value == nil then return end
-  if tonumber(value) == nil then return end
-  if value > 1 then value = 1 end -- Sound can not be set to over 1.
-  if value < 0.01 then value = 0 end -- Sound can not be set under 0.
-  if vfxVolume[name] == nil then print("That voice does not exist.") return end
-  vfxVolume[name] = value
-  audio.vfx[name]:setVolume(vfxVolume[name] * globalVolume * globalVolumeVFX)
-  return vfxVolume[name]
-end
-
---[[----------------------------------------------------------------------------
-      Batch Volume Control
---]]----------------------------------------------------------------------------
-
-function audio:setBatchSFX(names, values)
--- Note, this function has less protection than the single sets, use with care
-  if #names ~= #values then print("Length of tables do not match.") return end
-    for i=1, #names do
-      if sfxVolume[names[i]] == nil then print("Sound not found.") return end
-      if tonumber(values[i]) == nil then return end
-      sfxVolume[names[i]] = values[i]
+  for i = 1, #folder_items do
+    print(folder_items[i]:upper() .. ":")
+    local name = folder_items[i]
+    for i,v in pairs(audio[name]) do
+      print(i)
+      print("Loop: " .. tostring(audio[name][i]:isLooping()))
+      print("Volume:" .. audio.volume[name][i])
+      print("Type Volume:" .. audio.global[name])
+      print("Global Volume:" .. audio.global.all)
+      print("Set Volume:" .. audio.global.all * audio.global[name] * audio.volume[name][i])
+      print("Real Volume:" .. tostring(audio[name][i]:getVolume()))
+      print("")
     end
-    audio:setGlobalSFXVolume(globalVolumeSFX)
+  end
 end
 
-function audio:setBatchMusic(names, values)
--- Note, this function has less protection than the single sets, use with care
-  if #names ~= #values then print("Length of tables do not match.") return end
-    for i=1, #names do
-      if musVolume[names[i]] == nil then print("Music not found.") return end
-      if tonumber(values[i]) == nil then return end
-      musVolume[names[i]] = values[i]
+
+--[[ Loop Control ]]------------------------------------------------------------
+--[[ Notes ]]-------------------------------------------------------------------
+-- Sets music in folders as looping.
+function audio:loopAll(table)
+  for k, v in pairs(table) do
+    audio:setLooping(v)
+  end
+end
+
+--[[ Notes ]]-------------------------------------------------------------------
+-- Sets music in folders as looping.
+function audio:setLooping(name)
+if not audio[name] then print("does not exist") return end
+if type(audio[name]) ~= "table" then print("this is not a table") return end
+  for k, v in pairs(audio[name]) do
+    v:setLooping(true)
+  end
+end
+
+
+--[[ Volume Control ]]----------------------------------------------------------
+--[[ Notes ]]-------------------------------------------------------------------
+-- Set the volume of a single sound.
+function audio:setVolume(type, file_name, vol)
+  audio.volume[type][file_name] = vol
+  audio[type][file_name]:setVolume(audio.volume[type][file_name] * audio.global[type] * audio.global.all)
+end
+
+--[[ Notes ]]-------------------------------------------------------------------
+-- Set the volume of a group/folder of sounds individually.
+-- Not the global vol of that type.
+function audio:setAllVolume(type, vol)
+  for k, v in pairs(audio[type]) do
+    audio.volume[type][k] = vol
+    audio[type][k]:setVolume(audio.volume[type][k] * audio.global[type] * audio.global.all)
+  end
+end
+
+--[[ Notes ]]-------------------------------------------------------------------
+-- Set the volume of all of a type of sound.
+function audio:setTypeVolume(type, vol)
+  for k, v in pairs(audio[type]) do
+    audio.global[type] = vol
+    audio[type][k]:setVolume(audio.volume[type][k] * audio.global[type] * audio.global.all)
+  end
+end
+
+--[[ Notes ]]-------------------------------------------------------------------
+-- Set the volume of all sounds.
+function audio:setGlobalVolume(vol, folder_path)
+  folder_path = folder_path or path_to_audio_folder
+  if folder_path == nil then print("No Folder Loaded, Exiting.") return end
+  local folder_items = love.filesystem.getDirectoryItems(folder_path)
+  for i = 1, #folder_items do
+    type = folder_items[i]
+    for k, v in pairs(audio[type]) do
+      audio.global.all = vol
+      audio[type][k]:setVolume(audio.volume[type][k] * audio.global[type] * audio.global.all)
     end
-    audio:setGlobalMusicVolume(globalVolumeMUS)
+  end
 end
 
-function audio:setBatchVFX(names, values)
--- Note, this function has less protection than the single sets, use with care
-  if #names ~= #values then print("Length of tables do not match.") return end
-    for i=1, #names do
-      if vfxVolume[names[i]] == nil then print("Sound not found.") return end
-      if tonumber(values[i]) == nil then return end
-      vfxVolume[names[i]] = values[i]
-    end
-      audio:setGlobalVFXVolume(globalVolumeVFX)
-end
-
---[[----------------------------------------------------------------------------
-      Music Control
---]]----------------------------------------------------------------------------
-
-function audio:setMusicPlay(musicName, musicLayer)
-  musicLayer = musicLayer or 1
-  if musicName == nil then print("No Music Set!") return end
-  if audio.mus[musicName] == nil then print("Not a song!") return end
-  if audio.currentmusic[musicLayer] == musicName then
-    print("Music is the same, no change!") return
+--[[ Playing Audio ]]-----------------------------------------------------------
+--[[ Notes ]]-------------------------------------------------------------------
+-- Plays the audio file as a standard audio:play()
+-- Has an option to search for the audio in all the types, slow
+-- and not reccomended.
+function audio:play(name, type)
+  if type ~= nil then
+    audio[type][name]:play()
+    print("Playing", type, name)
   else
-    for key, value in pairs(audio.mus) do
-      audio.mus[key]:stop()
+    folder_path = folder_path or path_to_audio_folder
+    if folder_path == nil then print("No Folder Loaded, Exiting.") return end
+    local folder_items = love.filesystem.getDirectoryItems(folder_path)
+    for i = 1, #folder_items do
+      type = folder_items[i]
+      if audio[type][name] ~= nil then
+        audio[type][name]:play()
+        print("Playing", type, name)
+        break
+      end
     end
-    audio.mus[musicName]:play()
-    audio.currentmusic[musicLayer] = musicName
   end
 end
 
-function audio:setMusic(musicName, musicLayer)
-  musicLayer = musicLayer or 1
-  if musicName == nil then print("No Music Set!") return end
-  if audio.mus[musicName] == nil then print("Not a song!") return end
-  if audio.currentmusic[musicLayer] == musicName then
-    print("Music is the same, no change!") return
+--[[ Notes ]]-------------------------------------------------------------------
+-- Forces a sound to play by stopping the previous version of the sound from
+-- playing.
+-- Has an option to search for the audio in all the types, slow
+-- and not reccomended.
+function audio:fplay(name, type)
+  if type ~= nil then
+    audio[type][name]:stop()
+    audio[type][name]:play()
+    print("Playing", type, name)
   else
-    audio.currentmusic[musicLayer] = musicName
+    folder_path = folder_path or path_to_audio_folder
+    if folder_path == nil then print("No Folder Loaded, Exiting.") return end
+    local folder_items = love.filesystem.getDirectoryItems(folder_path)
+    for i = 1, #folder_items do
+      type = folder_items[i]
+      if audio[type][name] ~= nil then
+        audio[type][name]:stop()
+        audio[type][name]:play()
+        print("Playing", type, name)
+        break
+      end
+    end
   end
 end
 
-function audio:playMusic(musicLayer)
-  musicLayer = musicLayer or 1
-  if audio.currentmusic[musicLayer] == nil then print("Not a layer!") return end
-  if audio.mus[audio.currentmusic[musicLayer]] == nil then print("Not a song!") return end
-  audio.mus[audio.currentmusic[musicLayer]]:play()
-end
-
-function audio:pauseMusic(musicLayer)
-  musicLayer = musicLayer or 1
-  if audio.currentmusic[musicLayer] == nil then print("Not a layer!") return end
-  if audio.mus[audio.currentmusic[musicLayer]] == nil then print("Not a song!") return end
-  audio.mus[audio.currentmusic[musicLayer]]:pause()
-end
-
-function audio:resumeMusic(musicLayer)
-  musicLayer = musicLayer or 1
-  if audio.currentmusic[musicLayer] == nil then print("Not a layer!") return end
-  if audio.mus[audio.currentmusic[musicLayer]] == nil then print("Not a song!") return end
-  audio.mus[audio.currentmusic[musicLayer]]:play()
-end
-
-function audio:restartMusic(musicLayer)
-  musicLayer = musicLayer or 1
-  if audio.currentmusic[musicLayer] == nil then print("Not a layer!") return end
-  if audio.mus[audio.currentmusic[musicLayer]] == nil then print("Not a song!") return end
-  audio.mus[audio.currentmusic[musicLayer]]:seek(0)
-  audio.mus[audio.currentmusic[musicLayer]]:play()
-end
-
-function audio:stopMusic(musicLayer)
-  musicLayer = musicLayer or 1
-  if audio.currentmusic[musicLayer] == nil then print("Not a layer!") return end
-  if audio.mus[audio.currentmusic[musicLayer]] == nil then print("Not a song!") return end
-  audio.mus[audio.currentmusic[musicLayer]]:stop()
-end
-
-function audio:stopAllMusic()
-  for key, value in pairs(audio.mus) do
-    audio.mus[key]:stop()
+--[[ Notes ]]-------------------------------------------------------------------
+-- Stop all audio, or all of one type of audio from playing.
+function audio:stop(type)
+  if type ~= nil then
+    for k, v in pairs(audio[type]) do
+    audio[type][k]:stop()
+    end
+  else
+    folder_path = folder_path or path_to_audio_folder
+    if folder_path == nil then print("No Folder Loaded, Exiting.") return end
+    local folder_items = love.filesystem.getDirectoryItems(folder_path)
+    for i = 1, #folder_items do
+      type = folder_items[i]
+      for k, v in pairs(audio[type]) do
+          audio[type][name]:stop()
+      end
+    end
   end
 end
 
-function audio:crossMusic(layer1, layer2)
-  if audio.currentmusic[layer1] == nil then print("Not a layer!") return end
-  if audio.currentmusic[layer2] == nil then print("Not a layer!") return end
-    audio:pauseMusic(layer1)
-    audio:pauseMusic(layer2)
-    audio.mus[audio.currentmusic[layer2]]:seek(audio.mus[audio.currentmusic[layer1]]:tell())
-    audio:playMusic(layer2)
-end
-
-function audio:clearMusic()
-  audio:stopAllMusic()
-  audio.currentmusic = {}
-  audio.currentmusic[1] = nil
-end
-
---[[----------------------------------------------------------------------------
-      SFX Control
---]]----------------------------------------------------------------------------
-
-function audio:stopAllSFX()
-  for key, value in pairs(audio.sfx) do
-    audio.sfx[key]:stop()
+--[[ Playing Music ]]-----------------------------------------------------------
+-- DJ searches the groups_to_loop table for the music.
+-- really helps when you get a bunch of loud music you
+-- want to reduce in volume as a batch.
+--[[ Notes ]]-------------------------------------------------------------------
+-- Play the music as a track, if no track number is given, assumes track 1
+function audio.dj:play(name, number)
+  number = number or 1
+    if audio.dj.tracks[number] ~= nil then
+      audio.dj.tracks[number]:stop()
+    end
+  for i=1, #groups_to_loop do
+    if audio[groups_to_loop[i]][name] ~= nil then
+      audio.dj.tracks[number] = audio[groups_to_loop[i]][name]
+    end
+  end
+  if audio.dj.tracks[number] ~= nil then
+    if audio.dj.forced ~= nil then
+      audio.dj.forced:play()
+    else
+      audio.dj.tracks[number]:play()
+    end
+  else
+    print(name .. "could not be found.")
   end
 end
 
-function audio:sfxPlay(SFXName)
-  if SFXName == nil then print("No Sound Set!") return end
-  if audio.sfx[SFXName] == nil then print("Not a Sound!") return end
-  audio.sfx[SFXName]:play()
+--[[ Notes ]]-------------------------------------------------------------------
+function audio.dj:crossplay(name, number)
+  number = number or 1
+  audio.dj.tracks[number]:pause()
+  local synctime = audio.dj.tracks[number]:tell()
+  audio.dj.tracks[number]:stop()
+    for i=1, #groups_to_loop do
+      if audio[groups_to_loop[i]][name] ~= nil then
+        audio.dj.tracks[number] = audio[groups_to_loop[i]][name]
+      end
+    end
+    if audio.dj.tracks[number] ~= nil then
+      audio.dj.tracks[number]:seek(synctime)
+      audio.dj.tracks[number]:play()
+    else
+      print(name .. "could not be found.")
+    end
 end
 
-function audio:sfxForcePlay(SFXName)
-  if SFXName == nil then print("No Sound Set!") return end
-  if audio.sfx[SFXName] == nil then print("Not a Sound!") return end
-  audio.sfx[SFXName]:stop()
-  audio.sfx[SFXName]:play()
+--[[ Notes ]]-------------------------------------------------------------------
+function audio.dj:pause(number)
+  number = number or 1
+  if not audio.dj:checkvalid(number) then return end
+  audio.dj.tracks[number]:pause()
 end
 
---[[----------------------------------------------------------------------------
-      VFX Control
---]]----------------------------------------------------------------------------
+--[[ Notes ]]-------------------------------------------------------------------
+function audio.dj:resume(number)
+  number = number or 1
+  if not audio.dj:checkvalid(number) then return end
+  audio.dj.tracks[number]:play()
+end
 
-function audio:stopAllVFX()
-  for key, value in pairs(audio.vfx) do
-    audio.vfx[key]:stop()
+--[[ Notes ]]-------------------------------------------------------------------
+function audio.dj:stop(number)
+  number = number or 1
+  if not audio.dj:checkvalid(number) then return end
+  audio.dj.tracks[number]:stop()
+end
+
+--[[ Notes ]]-------------------------------------------------------------------
+function audio.dj:restart(number)
+  number = number or 1
+  if not audio.dj:checkvalid(number) then return end
+  audio.dj.tracks[number]:seek(0)
+  audio.dj.tracks[number]:play()
+end
+
+--[[ Notes ]]-------------------------------------------------------------------
+function audio.dj:clear()
+  for i = 1, #audio.dj.tracks do
+    audio.dj.tracks[i]:stop()
   end
+  audio.dj.tracks = {}
 end
 
-function audio:vfxPlay(VFXName)
-  if VFXName == nil then print("No Voice Set!") return end
-  if audio.vfx[VFXName] == nil then print("Not a Voice Clip!") return end
-  audio.vfx[VFXName]:play()
+--[[ Notes ]]-------------------------------------------------------------------
+-- Note: You must define the track directly. audio[type][name]
+function audio.dj:force(track)
+  track = track or nil
+  if track == nil then
+     audio.dj.forced = nil
+   else
+     audio.dj.forced = track
+   end
 end
 
-function audio:vfxForcePlay(VFXName)
-  if VFXName == nil then print("No Voice Set!") return end
-  if audio.vfx[VFXName] == nil then print("Not a Voice Clip!") return end
-  audio.vfx[VFXName]:stop()
-  audio.vfx[VFXName]:play()
+function audio.dj:checkvalid(number)
+  if type(number) ~= "number" then print ("NAN") return false end
+  if audio.dj.tracks[number] == nil then print ("NAT") return false end
+  if type(audio.dj.tracks[number]) ~= "userdata" then print ("NUD") return false end
+  return true
 end
 
-
+--[[ End of library ]]----------------------------------------------------------
 return audio

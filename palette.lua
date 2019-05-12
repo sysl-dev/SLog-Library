@@ -28,18 +28,28 @@ local palette = {
     SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   ]]
 }
-local pathtoimage = "library/slog/palette.png"
 
+--[[ Configuration ]]-----------------------------------------------------------
+-- An image is required to generate the palette.
+local pathtoimage = "texture/system/palette.png"
+
+-- Size of palette squares
+palette.squareSize = 32
+
+--[[ End Configuration ]]-----------------------------------------------------------
+
+--[[ Notes ]]-------------------------------------------------------------------
+-- Confirms that the image exists.
 local info = love.filesystem.getInfo( pathtoimage, "file" )
 if info == nil then print("File not found. SLog Palette not loaded.") return end
 
-palette.fileLocation = pathtoimage -- Point to your palette file.
-palette.squareSize = 32
-
-local image = love.image.newImageData(palette.fileLocation) -- Temp load the image
+--[[ Notes ]]-------------------------------------------------------------------
+-- Load the image
+local image = love.image.newImageData(pathtoimage) -- Temp load the image
 local r, g, b, a = 0,0,0,0
 local i = 1
 
+--[[ Notes ]]-------------------------------------------------------------------
 -- Loop through all the squares.
 for y = 0, image:getHeight()-1, palette.squareSize do
   for x = 0, image:getWidth()-1, palette.squareSize do
@@ -50,6 +60,9 @@ for y = 0, image:getHeight()-1, palette.squareSize do
   end
 end
 
+--[[ Notes ]]-------------------------------------------------------------------
+-- Free up memory
 local image, r, g, b, a, i = nil, nil, nil, nil, nil, nil
 
+--[[ End of library ]]----------------------------------------------------------
 return palette

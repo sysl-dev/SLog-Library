@@ -34,6 +34,7 @@ local pixels = {
 --[[ Configuration ]]-----------------------------------------------------------
 -- A requirement for pixel perfect scaling.
   love.graphics.setDefaultFilter( "nearest", "nearest", 1 )
+  love.graphics.setLineStyle("rough")
 
 -- Capture the conf.lua settings for Window Size
   local baseWidth = love.graphics.getWidth()
@@ -295,7 +296,5 @@ function pixels:screenshotExist(name, picture)
   if pixels[picture][name] ~= nil then return true else return false end
 end
 
-
---[[ Notes ]]-------------------------------------------------------------------
--- End of library.
+--[[ End of library ]]----------------------------------------------------------
 return pixels

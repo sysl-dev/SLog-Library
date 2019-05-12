@@ -1,5 +1,5 @@
 # SLog-Library
-LOVE2D (V11+) Library that I pretty much created for my own use. Feel free to take and adapt as needed for your own projects. (MIT License) It's mostly brute-force code, since I just do game jams. Let me know if you find it useful!
+LOVE2D (V11+) Library that I pretty much created for my own use. Feel free to take and adapt as needed for your own projects. 
 
 Thank you,<br>
 System Logoff
@@ -8,97 +8,89 @@ System Logoff
 SLog Audio is a wrapper around LOVE2D's audio functions, with automatic import functionality.
 
 ### Including in your project
-```Audio = require 'path.to.audio'``` -- Creates Audio.sfx, Audio.vfx, Audio.mus<br>
-```Audio:setUp()``` -- Imports music from folders, sets music to loop.
+```audio = require 'path.to.audio'``` -- Creates Audio.sfx, Audio.vfx, Audio.mus<br>
+```audio:setUp()``` -- Imports music from folders, sets music to loop.
 
 ### Requirements
-```music```, ```sfx``` and ```vfx``` directories, containing music, sound effects, and voice-over effects respectively.
+Directories under an *audio* folder, the name of which is defined in the configuration. 
 
 ### Note
-Currently Love2D 11.2 has an issue with streaming music, this will be corrected in 11.3
+Currently Love2D 11.2 has an issue with streaming music, this will be corrected in 11.3. While that is pending, music is set as static.
 
 ### Configuration / Control
-```Audio.currentmusic[#]``` -- What music is currently playing<br>
-```Audio.debug = true``` -- Print the list of audio files to the console on game load.
+-- Folder where your audio is kept.<br>
+local path_to_audio_folder = "audio"<br>
+<br>
+-- List files on startup in the console<br>
+local list_files = true<br>
+<br>
+-- What folders of audio need to loop<br>
+local groups_to_loop = {"env", "music"}<br>
+<br>
+-- Default local audio volume<br>
+local default_volume = 0.5<br>
+<br>
+-- Default global audio volume<br>
+local default_global_volume = 1<br>
+<br>
+-- Volume for all sounds<br>
+audio.global = {}  -- audio.global.[audio_folders]<br>
+audio.global.all = default_global_volume<br>
+<br>
+-- This table stores the volume of audio so we can update the global settings.<br>
+audio.volume = {}<br>
+<br>
+-- DJ, controls the music that is playing.<br>
+audio.dj = {}<br>
+-- Current audio tracks.<br>
+audio.dj.tracks = {}<br>
+audio.dj.forced = nil<br>
 
 ### Functions - Music
-#### Audio:setMusicPlay(musicName, musicLayer)
-Sets the music to an imported song. The name is the music filename without the extension. If you do not define a layer, it will default to 1. It will then auto-play the track and stop other songs playing.
+#### audio:setVolume(type, file_name, vol)
+Sets the volume of a single audio file.
 
-#### Audio:setMusic(musicName, musicLayer)
-Set the music of a layer, does not auto-play the track.
+#### audio:setAllVolume(type, vol)
+Sets the volume of a group of audio files, groups are defined by the folders.
 
-#### Audio:playMusic(musicLayer)
-Play the track on that music layer. If no value is passed it will default to 1.
+#### audio:setTypeVolume(type, vol)
+Sets the volume of a type of audio files.
 
-#### Audio:pauseMusic(musicLayer)
-Pause the track on that music layer. If no value is passed it will default to 1.
+#### audio:setGlobalVolume(vol, folder_path)
+Sets the global volume.<br>
 
-#### Audio:resumeMusic(musicLayer)
-Resume the track on that music layer. If no value is passed it will default to 1.
+#####Note:
+Final volume is defined as ```audio.volume[type][k] * audio.global[type] * audio.global.all```
 
-#### Audio:restartMusic(musicLayer)
-Restarts the track on that music layer. If no value is passed it will default to 1.
+#### audio:play(name, type)
+Plays a sound.
 
-#### Audio:stopMusic(musicName)
-Stop the track on that music layer. If no value is passed it will default to 1.
+#### audio:fplay(name, type)
+Force plays a sound by stopping the current sound and playing it again.
 
-#### Audio:stopAllMusic()
-Stops all playing music tracks.
+#### audio:stop(type)
+Stops all of a type of sound from playing.
 
-#### Audio:crossMusic(layer1, layer2)
-Pause layer1, resume layer2 at layer1's paused time.
+### Audio DJ - Allows control of music tracks.
 
-### Functions - Sound
-#### Audio:stopAllSFX()
-Stops all playing sound effects.
+#### audio.dj:play(name, number)
+Plays a track, if no number is defined, plays it in slot 1.
 
-#### Audio:sfxPlay(SFXName)
-Play a sound effect.
+#### audio.dj:crossplay(name, number)
+Plays a track starting from the same position in the song as the defined track number. Allows swaps sort of like Banjo Kazooie, where the audio swaps depending on what's nearby.
 
-#### Audio:sfxForcePlay(SFXName)
-Force a sound effect to play by stopping the sound effect and replaying it.
+#### audio.dj:pause(number)
+Pauses a track.
 
-### Functions - VFX
-#### Audio:stopAllVFX()
-Stops all playing voice lines.
+#### audio.dj:restart(number)
+Restarts a track from the begining.
 
-#### Audio:vfxPlay(SFXName)
-Play a voice line.
+#### audio.dj:clear(number)
+Stops all playing tracks, clears the track list.
 
-#### Audio:vfxForcePlay(SFXName)
-Force a voice line to play by stopping the sound effect and replaying it.
+#### audio.dj:force(track)
+Forces only this track to play until audio.dj:force(nil) is sent.
 
-### Functions - Volume
-#### Audio:setGlobalSFXVolume(value)
-Set the global volume of all sound effects.
-
-#### Audio:setGlobalMusicVolume(value)
-Set the global volume of all songs.
-
-#### Audio:setGlobalVFXVolume(value)
-Set the global volume of all voice effects.
-
-#### Audio:setGlobalVolume(value)
-Set the global volume of all sounds.
-
-#### Audio:setSingleSFX(name, value)
-Set the volume of a single sound.
-
-#### Audio:setSingleMusic(name, value)
-Set the volume of a single song.
-
-#### Audio:setSingleVFX(name, value)
-Set the volume of a single voice.
-
-#### Audio:setBatchSFX({table_names}{table_values})
-Batch set the sound volume of a list of sound effects.
-
-#### Audio:setBatchMusic({table_names}{table_values})
-Batch set the sound volume of a list of songs.
-
-#### Audio:setBatchCFX({table_names}{table_values})
-Batch set the sound volume of a list of voices.
 
 ## SLog Floppy
 SLog Floppy is a wrapper around [Smallfolk](https://github.com/gvx/Smallfolk) for a fast way to manage save files.
@@ -108,7 +100,9 @@ SLog Floppy is a wrapper around [Smallfolk](https://github.com/gvx/Smallfolk) fo
 Note: You will have to define Smallfolk's imported name in floppy.lua
 
 ### Configuration / Control
-```floppy.filetype = ".txt"``` -- Defines what save files end with.
+```floppy.filetype = ".txt"``` -- Defines what save files end with.<br>
+<br>
+```floppy.ram = "ram"``` -- Default table to save to file
 
 ### Functions
 #### Floppy:save(filename, memory)
@@ -117,8 +111,11 @@ Filename is what the file is named, memory is what Lua Table to dump to the file
 #### Floppy:delete(filename)
 Delete a save file.
 
-#### memory = Floppy:Load(filename)
+#### memory = Floppy:loadas(filename)
 Filename is what the file is named, memory is what Lua Table to dump the file into.
+
+#### Floppy:load(filename)
+Loads the save into the default table.
 
 ## SLog Palette
 A quick image to palette table command.
@@ -165,8 +162,22 @@ Force system cursor on or off.
 #### Pixels:forceCursor(cursorNumber)
 Force system cursor on or off.
 
-#### pixels.mousey / pixels.mousex
+#### pixels.mouse.y / pixels.mouse.x
 Variables that give you the X/Y position of the mouse according to the pixel scale of the screen. Use this to check for mouse position.
+
+#### pixels:screenshot(name, picture)
+Take a screenshot of the current screen.
+
+#### pixels:screenshotClearAll(picture)
+Clear all pictures
+
+#### pixels:screenshotClear(name, picture)
+Clear a single picture 
+
+#### pixels:screenshotExist(name, picture)
+Check to see if the screenshot/bank exists, reccomended before trying to draw.
+
+
 
 ## SLog Textbox
 A fancy system for printing text.<br>

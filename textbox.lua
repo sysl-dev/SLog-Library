@@ -42,7 +42,7 @@ local text_sounds = {
 
 }
 -- Create sound to play if sfx/music/voiceacting is not valid.
-if text_sounds[1] == nil then text_sounds[1] = love.audio.newSource( 'library/slog/default.ogg', "static" ) end
+if text_sounds[1] == nil then text_sounds[1] = love.audio.newSource( 'audio/sound/default.ogg', "static" ) end
 
 -- Font Tags, Palette Tags and Image tags assume you're storing them. Update if required.
 textbox.fontTable = "font" -- What do you store your list of fonts in?
